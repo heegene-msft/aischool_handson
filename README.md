@@ -2,9 +2,8 @@
 
 **Microsoft Agent Framework(MAF)를 활용한 AI Agent 개발 실습**
 
-> ⏱️ 소요 시간: 약 3시간  
-> 📊 난이도: L200-300 (중급)  
-> 🎓 대상: Azure AI 서비스에 관심 있는 개발자
+> ⏱️ 소요 시간: 약 2-3시간  
+> 📊 난이도: L200-L300
 
 ---
 
@@ -23,7 +22,6 @@
 | **Lab 4** | 통합 Agent - RAG + Tool Calling | 20분 |
 | **Lab 5** | 웹 검색 Agent - Bing Search Grounding 연동 | 30분 |
 | **Lab 6** | 오케스트레이터 Agent - 멀티에이전트 라우팅 | 30분 |
-| **Lab 7** | (선택) Azure Container Apps 배포 | 30분 |
 
 ### 아키텍처
 
@@ -74,7 +72,7 @@
 | 리소스 | 용도 | 필수 |
 |--------|------|:----:|
 | Microsoft Foundry 프로젝트 | Agent Service 호스팅 | ✅ |
-| gpt-4o-mini 모델 배포 | LLM 추론 | ✅ |
+| gpt-4.1 모델 배포 | LLM 추론 | ✅ |
 | Azure AI Search | RAG용 벡터 검색 | Lab 2 |
 | Grounding with Bing Search | 웹 검색 기능 | Lab 4 |
 
@@ -186,7 +184,7 @@ AZURE_SEARCH_SERVICE_ENDPOINT=https://your-search.search.windows.net
 AZURE_SEARCH_INDEX_NAME=gptkbindex
 
 # (선택) Bing Search Grounding - Lab 4용
-# 비워두면 SDK가 프로젝트에서 Bing connection을 자동 검색합니다
+# 비워두면 SDK가 프로젝트에서 Bing connection을 자동 검색합니다. 그냥 비워두시는 편이 편합니다. 
 # 또는 Connection 이름만 입력해도 됩니다 (예: mybingsearch)
 BING_CONNECTION_ID=
 ```
@@ -295,12 +293,8 @@ Azure AI Search를 연동하여 문서 기반 질의응답(RAG) 시스템을 구
 
 샘플 데이터 `data/Zava_Company_Overview.md`를 Azure AI Search에 인덱싱:
 
-```bash
-# prepdocs 스크립트 실행
-./scripts/prepdocs.sh
-```
 
-또는 Azure Portal에서 수동 설정:
+Azure Portal에서 수동 설정:
 1. AI Search > **데이터 가져오기**
 2. 데이터 원본: Blob Storage 또는 직접 업로드
 3. 인덱스 이름: `gptkbindex`
@@ -446,7 +440,7 @@ python test_agents.py tools
 ✅ 응답: 25 × 4 = 100입니다.
 ```
 
-### 📝 실습 과제
+### 📝 Stretch goals! 시간 남으시면 시도해 보세요 :)
 
 `tools/calculator.py`에 새로운 Tool 추가:
 - `power(base, exponent)` - 거듭제곱
@@ -505,31 +499,8 @@ az cognitiveservices account project connection show \
   --query id -o tsv
 ```
 
-### 핵심 코드: WebSearchAgent
 
-SDK를 사용한 자동 Connection 검색:
-
-```python
-from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential
-
-# 프로젝트에서 Bing connection 자동 검색
-project_client = AIProjectClient(
-    endpoint=config.project_endpoint,
-    credential=DefaultAzureCredential(),
-)
-
-# 이름으로 조회
-connection = project_client.connections.get("mybingsearch")
-bing_connection_id = connection.id
-
-# 또는 전체 목록에서 자동 검색
-for conn in project_client.connections.list():
-    if 'bing' in conn.name.lower():
-        bing_connection_id = conn.id
-        break
 ```
-
 Agent 생성:
 
 class WebSearchAgent(BaseAgent):

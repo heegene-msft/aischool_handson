@@ -42,7 +42,7 @@ async def test_rag_agent():
     agent = RAGAgent(config)
     
     try:
-        response = await agent.chat("Zava 회사의 역사에 대해 알려주세요.")
+        response = await agent.chat("Java 역사에 대해 알려주세요")
         print(f"\n✅ 응답:\n{response}")
     finally:
         await agent.close()

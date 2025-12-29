@@ -104,7 +104,10 @@ const Labs = () => {
             await fetch("/api/reset", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_id: sessionId })
+                body: JSON.stringify({ 
+                    session_id: sessionId,
+                    agent_type: selectedLab  // 현재 선택된 Lab의 agent 리셋
+                })
             });
             setMessages([]);
         } catch (error) {
@@ -112,11 +115,15 @@ const Labs = () => {
         }
     };
 
+    const handleExampleClick = (example: string) => {
+        setInputValue(example);
+    };
+
     return (
         <div className={styles.container}>
             {/* 사이드바 - Lab 선택 */}
             <aside className={styles.sidebar}>
-                <h2 className={styles.sidebarTitle}>🎯 핸즈온 Labs</h2>
+                <h2 className={styles.sidebarTitle}>🎯 MAF 기반 Agent HoL Chat</h2>
                 <nav className={styles.labNav}>
                     {(Object.keys(labInfo) as AgentType[]).map((lab) => (
                         <button
@@ -157,30 +164,30 @@ const Labs = () => {
                                 <p>예시 질문:</p>
                                 {selectedLab === "basic" && (
                                     <ul>
-                                        <li>자기소개를 해주세요</li>
-                                        <li>오늘 날씨가 어떨까요?</li>
+                                        <li onClick={() => handleExampleClick("자기소개를 해주세요")}>자기소개를 해주세요</li>
+                                        <li onClick={() => handleExampleClick("오늘 날씨가 어떨까요?")}>오늘 날씨가 어떨까요?</li>
                                     </ul>
                                 )}
                                 {selectedLab === "rag" && (
                                     <ul>
-                                        <li>Zava 회사는 언제 설립되었나요?</li>
-                                        <li>회사의 휴가 정책은 어떻게 되나요?</li>
-                                        <li>핵심 가치(Core Values)에 대해 알려주세요</li>
+                                        <li onClick={() => handleExampleClick("Zava 회사는 언제 설립되었나요?")}>Zava 회사는 언제 설립되었나요?</li>
+                                        <li onClick={() => handleExampleClick("회사의 휴가 정책은 어떻게 되나요?")}>회사의 휴가 정책은 어떻게 되나요?</li>
+                                        <li onClick={() => handleExampleClick("핵심 가치(Core Values)에 대해 알려주세요")}>핵심 가치(Core Values)에 대해 알려주세요</li>
                                     </ul>
                                 )}
                                 {selectedLab === "tools" && (
                                     <ul>
-                                        <li>123 더하기 456은?</li>
-                                        <li>1000에서 350을 빼면?</li>
-                                        <li>25 곱하기 4는 얼마인가요?</li>
-                                        <li>100 나누기 8을 계산해주세요</li>
+                                        <li onClick={() => handleExampleClick("123 더하기 456은?")}>123 더하기 456은?</li>
+                                        <li onClick={() => handleExampleClick("1000에서 350을 빼면?")}>1000에서 350을 빼면?</li>
+                                        <li onClick={() => handleExampleClick("25 곱하기 4는 얼마인가요?")}>25 곱하기 4는 얼마인가요?</li>
+                                        <li onClick={() => handleExampleClick("100 나누기 8을 계산해주세요")}>100 나누기 8을 계산해주세요</li>
                                     </ul>
                                 )}
                                 {selectedLab === "combined" && (
                                     <ul>
-                                        <li>Zava 회사의 역사를 알려주세요</li>
-                                        <li>직원 인정 프로그램에 대해 설명해주세요</li>
-                                        <li>500 곱하기 20은?</li>
+                                        <li onClick={() => handleExampleClick("Zava 회사의 역사를 알려주세요")}>Zava 회사의 역사를 알려주세요</li>
+                                        <li onClick={() => handleExampleClick("직원 인정 프로그램에 대해 설명해주세요")}>직원 인정 프로그램에 대해 설명해주세요</li>
+                                        <li onClick={() => handleExampleClick("500 곱하기 20은?")}>500 곱하기 20은?</li>
                                     </ul>
                                 )}
                             </div>

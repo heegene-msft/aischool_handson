@@ -1,4 +1,6 @@
 -r app/backend/requirements.txt
+rich>=13.0.0
+openai>=1.0.0
 ruff>=0.14.2
 black
 pytest

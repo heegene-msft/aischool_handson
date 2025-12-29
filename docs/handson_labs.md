@@ -64,8 +64,13 @@ cd azure-search-openai-demo
 python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# 패키지 설치
+# 백엔드 패키지 설치
 pip install -r app/backend/requirements.txt
+
+# 프론트엔드 패키지 설치
+cd app/frontend
+npm install
+cd ../..
 
 # 환경 변수 설정
 cp app/backend/.env.sample app/backend/.env
@@ -110,6 +115,11 @@ az account show
 `app/backend/agents.py`의 `BaseAgent` 클래스를 살펴봅니다:
 
 ```python
+# Microsoft Agent Framework imports
+from agent_framework import ChatAgent
+from agent_framework.azure import AzureAIAgentClient
+from azure.identity.aio import AzureCliCredential
+
 class BaseAgent:
     """Lab 1: 기본 챗봇 에이전트"""
     
@@ -119,18 +129,27 @@ class BaseAgent:
         self.agent = None
         
     async def initialize(self):
-        # Azure AI Agent Service 클라이언트 생성
-        self.client = AgentsClient(
-            endpoint=self.config.project_endpoint,
-            credential=DefaultAzureCredential()
+        # Azure 인증
+        self.credential = AzureCliCredential()
+        
+        # AzureAIAgentClient 생성 (Microsoft Agent Framework)
+        self.client = AzureAIAgentClient(
+            project_endpoint=self.config.project_endpoint,
+            model_deployment_name=self.config.model_deployment_name,
+            async_credential=self.credential,
         )
         
-        # 에이전트 생성
-        self.agent = await self.client.create_agent(
-            model=self.config.model_deployment_name,
-            name="maf-basic-chatbot",
+        # ChatAgent 생성 - Framework가 Agent 라이프사이클 자동 관리
+        self.agent = self.client.create_agent(
+            name="기본 챗봇",
             instructions="당신은 친절한 AI 어시스턴트입니다..."
         )
+    
+    async def chat(self, message: str) -> str:
+        # Framework가 자동으로 대화 처리
+        async with self.agent as agent:
+            result = await agent.run(message)
+            return result.text
 ```
 
 ### 1.3 실습
@@ -169,6 +188,47 @@ class BaseAgent:
 - 검색 결과를 활용한 답변 생성
 
 ### 2.2 데이터 인덱싱
+
+#### 방법 1: Portal에서 "Import and vectorize data" 사용 (권장)
+
+Portal에서 GUI로 쉽게 데이터를 인덱싱할 수 있습니다.
+
+##### 사전 설정: 역할 할당 (필수)
+
+Azure AI Search가 Azure OpenAI의 임베딩 API를 호출하려면 권한이 필요합니다:
+
+1. **Azure Portal** → **Azure AI Services/Foundry 리소스** (`aischool-demo` 등) 이동
+2. 왼쪽 메뉴에서 **Access control (IAM)** 클릭
+3. **+ Add** → **Add role assignment** 클릭
+4. **Role** 탭에서 **`Cognitive Services OpenAI Contributor`** 선택 → **Next**
+5. **Members** 탭에서:
+   - **Assign access to**: `Managed identity` 선택
+   - **+ Select members** 클릭
+   - **Managed identity**: `Search service` 선택
+   - 목록에서 본인의 Azure AI Search 서비스 선택 (예: `search-maf-handson`)
+   - **Select** 클릭
+6. **Review + assign** 클릭
+
+> ⚠️ **중요**: `Cognitive Services OpenAI User`로는 권한이 부족합니다. 반드시 **`Cognitive Services OpenAI Contributor`** 역할을 할당하세요.
+
+##### Portal에서 인덱싱
+
+1. **Azure Portal** → **Azure AI Search** 서비스로 이동
+2. 상단의 **"Import and vectorize data"** 클릭
+3. **데이터 소스 연결**:
+   - **Azure Blob Storage** 선택
+   - Storage Account와 컨테이너 (문서가 업로드된 곳) 선택
+4. **벡터화 설정**:
+   - Azure OpenAI 연결 선택
+   - 임베딩 모델 선택 (예: `text-embedding-ada-002`)
+5. **인덱스 설정**:
+   - 인덱스 이름: `gptkbindex` (또는 원하는 이름)
+   - Semantic ranker: **Enable** 체크
+6. **Review + Create** 클릭
+
+인덱싱이 완료되면 `.env` 파일의 `AZURE_SEARCH_INDEX_NAME`을 생성한 인덱스 이름으로 설정하세요.
+
+#### 방법 2: 스크립트 사용
 
 ```bash
 # 데이터 폴더의 문서를 Azure AI Search에 인덱싱
@@ -249,31 +309,30 @@ class RAGAgent(BaseAgent):
 
 ### 3.2 핵심 코드 분석
 
-`app/backend/tools/calculator.py`의 도구 정의:
+Microsoft Agent Framework에서는 Python 함수를 직접 Tool로 전달합니다:
+
+`app/backend/agents.py`의 도구 정의:
 
 ```python
-def add(a: float, b: float) -> float:
+from typing import Annotated
+from pydantic import Field
+
+def add(
+    a: Annotated[float, Field(description="첫 번째 숫자")],
+    b: Annotated[float, Field(description="두 번째 숫자")]
+) -> float:
     """두 숫자를 더합니다."""
     return a + b
 
-CALCULATOR_TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "add",
-            "description": "두 숫자를 더합니다",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "a": {"type": "number", "description": "첫 번째 숫자"},
-                    "b": {"type": "number", "description": "두 번째 숫자"}
-                },
-                "required": ["a", "b"]
-            }
-        }
-    },
-    # ... multiply, subtract, divide
-]
+def multiply(
+    a: Annotated[float, Field(description="첫 번째 숫자")],
+    b: Annotated[float, Field(description="두 번째 숫자")]
+) -> float:
+    """두 숫자를 곱합니다."""
+    return a * b
+
+# 함수 리스트로 직접 전달 (JSON schema 불필요!)
+CALCULATOR_TOOLS = [add, subtract, multiply, divide]
 ```
 
 `app/backend/agents.py`의 `ToolAgent` 클래스:
@@ -283,12 +342,26 @@ class ToolAgent(BaseAgent):
     """Lab 3: Tool Calling 에이전트"""
     
     async def initialize(self):
-        self.agent = await self.client.create_agent(
-            model=self.config.model_deployment_name,
-            name="maf-tool-agent",
-            instructions="계산기 도구를 사용해서 수학 문제를 풀어주세요.",
-            tools=CALCULATOR_TOOLS  # 도구 등록
+        self.credential = AzureCliCredential()
+        
+        self.client = AzureAIAgentClient(
+            project_endpoint=self.config.project_endpoint,
+            model_deployment_name=self.config.model_deployment_name,
+            async_credential=self.credential,
         )
+        
+        # 함수 리스트를 tools로 직접 전달 - Framework가 자동 처리!
+        self.agent = self.client.create_agent(
+            name="계산기 Agent",
+            instructions="계산기 도구를 사용해서 수학 문제를 풀어주세요.",
+            tools=CALCULATOR_TOOLS  # 함수 리스트 직접 전달
+        )
+    
+    async def chat(self, message: str) -> str:
+        # Framework가 Tool Calling을 자동으로 처리
+        async with self.agent as agent:
+            result = await agent.run(message)
+            return result.text
 ```
 
 ### 3.3 실습
@@ -306,29 +379,28 @@ class ToolAgent(BaseAgent):
 
 ### 3.4 도구 추가 실습
 
-`app/backend/tools/calculator.py`에 새로운 도구를 추가해보세요:
+`app/backend/agents.py`에 새로운 도구를 추가해보세요:
 
 ```python
-def power(base: float, exponent: float) -> float:
-    """거듭제곱을 계산합니다."""
+from typing import Annotated
+from pydantic import Field
+
+def power(
+    base: Annotated[float, Field(description="밑")],
+    exponent: Annotated[float, Field(description="지수")]
+) -> float:
+    """거듭제곱을 계산합니다 (base^exponent)."""
     return base ** exponent
 
+def sqrt(
+    n: Annotated[float, Field(description="제곱근을 구할 숫자")]
+) -> float:
+    """제곱근을 계산합니다."""
+    import math
+    return math.sqrt(n)
+
 # CALCULATOR_TOOLS에 추가
-{
-    "type": "function",
-    "function": {
-        "name": "power",
-        "description": "거듭제곱을 계산합니다 (base^exponent)",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "base": {"type": "number", "description": "밑"},
-                "exponent": {"type": "number", "description": "지수"}
-            },
-            "required": ["base", "exponent"]
-        }
-    }
-}
+CALCULATOR_TOOLS = [add, subtract, multiply, divide, power, sqrt]
 ```
 
 ### 3.5 연습 문제
@@ -355,23 +427,31 @@ class CombinedAgent(BaseAgent):
     """Lab 4: RAG + Tool Calling 통합 에이전트"""
     
     async def initialize(self):
+        self.credential = AzureCliCredential()
+        
         # RAG를 위한 검색 헬퍼
         self.search_helper = SearchHelper(
             self.config.search_endpoint,
-            self.config.search_index_name
+            self.config.search_index_name,
+            credential=self.credential,
         )
         
-        # 도구 + 검색 결합
-        self.agent = await self.client.create_agent(
-            model=self.config.model_deployment_name,
-            name="maf-combined-agent",
+        # AzureAIAgentClient로 RAG + Tools Agent 생성
+        self.client = AzureAIAgentClient(
+            project_endpoint=self.config.project_endpoint,
+            model_deployment_name=self.config.model_deployment_name,
+            async_credential=self.credential,
+        )
+        
+        self.agent = self.client.create_agent(
+            name="통합 Agent",
             instructions="""
 당신은 Zava 회사의 AI 어시스턴트입니다.
 - 회사 정보 질문: 제공된 참고 자료를 활용하세요
 - 수학 계산 요청: 계산기 도구를 사용하세요
 항상 정확하고 친절하게 답변하세요.
             """,
-            tools=CALCULATOR_TOOLS
+            tools=CALCULATOR_TOOLS  # 함수 리스트 전달
         )
 ```
 

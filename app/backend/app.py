@@ -81,6 +81,7 @@ async def get_config():
 
 
 @app.route("/api/chat", methods=["POST"])
+@app.route("/api/basic", methods=["POST"])
 async def chat():
     """
     Lab 1: 기본 채팅
@@ -199,25 +200,60 @@ async def combined_chat():
 
 @app.route("/api/reset", methods=["POST"])
 async def reset_session():
-    """세션 리셋 - 새로운 대화 시작"""
+    """세션 리셋 - 새로운 대화 시작 및 에이전트 삭제"""
     global agents
     
     data = await request.get_json()
     session_id = data.get("session_id", "default")
+    agent_type = data.get("agent_type")  # 특정 타입만 리셋 (optional)
     
-    # 해당 세션의 모든 Agent 정리
-    keys_to_remove = [k for k in agents.keys() if k.endswith(f"_{session_id}")]
-    for key in keys_to_remove:
-        await agents[key].close()
-        del agents[key]
+    removed_count = 0
     
-    return jsonify({"message": "세션이 리셋되었습니다."})
+    # 해당 세션의 Agent 정리
+    if agent_type:
+        # 특정 타입만 리셋
+        key = f"{agent_type}_{session_id}"
+        if key in agents:
+            try:
+                await agents[key].close()
+            except Exception as e:
+                logger.warning(f"Agent close warning: {e}")
+            del agents[key]
+            removed_count = 1
+            logger.info(f"Agent {key} 삭제됨")
+    else:
+        # 해당 세션의 모든 Agent 정리
+        keys_to_remove = [k for k in agents.keys() if k.endswith(f"_{session_id}")]
+        for key in keys_to_remove:
+            try:
+                await agents[key].close()
+            except Exception as e:
+                logger.warning(f"Agent close warning for {key}: {e}")
+            del agents[key]
+            logger.info(f"Agent {key} 삭제됨")
+        removed_count = len(keys_to_remove)
+    
+    return jsonify({
+        "message": "세션이 리셋되었습니다.",
+        "session_id": session_id,
+        "removed_count": removed_count
+    })
 
 
 @app.route("/health")
 async def health():
     """헬스체크"""
     return jsonify({"status": "healthy"})
+
+
+@app.route("/auth_setup")
+async def auth_setup():
+    """인증 설정 - 핸즈온에서는 인증 비활성화"""
+    return jsonify({
+        "useLogin": False,
+        "requireAccessControl": False,
+        "enableLogout": False,
+    })
 
 
 # ============================================================

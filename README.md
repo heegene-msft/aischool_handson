@@ -158,51 +158,41 @@ az login
 ## 🤖 Lab 1: 기본 챗봇 (30분)
 
 ### 목표
-Microsoft Agent Framework의 `AgentsClient`를 사용하여 기본 대화형 챗봇을 구현합니다.
+Microsoft Agent Framework의 `AzureAIAgentClient`와 `ChatAgent`를 사용하여 기본 대화형 챗봇을 구현합니다.
 
 ### 핵심 코드: `app/backend/agents.py`
 
 ```python
-from azure.ai.agents.aio import AgentsClient
-from azure.identity.aio import DefaultAzureCredential
+# Microsoft Agent Framework imports
+from agent_framework import ChatAgent
+from agent_framework.azure import AzureAIAgentClient
+from azure.identity.aio import AzureCliCredential
 
 class BaseAgent:
     """기본 Agent 클래스 - Lab 1용"""
     
     async def initialize(self):
         # Azure 인증
-        self.credential = DefaultAzureCredential()
+        self.credential = AzureCliCredential()
         
-        # Agent Service 클라이언트 생성
-        self.client = AgentsClient(
-            endpoint=self.config.project_endpoint,
-            credential=self.credential,
+        # AzureAIAgentClient 생성 (Microsoft Agent Framework)
+        self.client = AzureAIAgentClient(
+            project_endpoint=self.config.project_endpoint,
+            model_deployment_name=self.config.model_deployment_name,
+            async_credential=self.credential,
         )
         
-        # Agent 생성
-        self.agent = await self.client.create_agent(
-            model=self.config.model_deployment_name,
+        # ChatAgent 생성 - Framework가 자동으로 Agent 라이프사이클 관리
+        self.agent = self.client.create_agent(
             name="기본 챗봇",
             instructions="당신은 친절하고 도움이 되는 AI 어시스턴트입니다.",
         )
-        
-        # 대화 스레드 생성
-        self.thread = await self.client.create_thread()
     
     async def chat(self, message: str) -> str:
-        # 메시지 추가
-        await self.client.create_message(
-            thread_id=self.thread.id,
-            role=MessageRole.USER,
-            content=message,
-        )
-        
-        # Agent 실행 및 응답 대기
-        run = await self.client.create_run(
-            thread_id=self.thread.id,
-            agent_id=self.agent.id,
-        )
-        # ... 응답 처리
+        # Agent 컨텍스트 내에서 실행 - Framework가 자동 처리
+        async with self.agent as agent:
+            result = await agent.run(message)
+            return result.text
 ```
 
 ### 실습
@@ -302,8 +292,8 @@ Zava는 1985년에 설립된 기술 회사입니다...
 
 다양한 질문 시도:
 - "Zava의 핵심 가치는?"
-- "휴가 정책에 대해 알려주세요"
-- "직원 복지 프로그램이 있나요?"
+- "Zava Company의 휴가에 대해 알려주세요"
+- "Java 역사에 대해 알려주세요(안나와야합니다 ㅎㅎ)"
 
 ---
 
@@ -312,37 +302,31 @@ Zava는 1985년에 설립된 기술 회사입니다...
 ### 목표
 Function Calling을 사용하여 사칙연산 기능을 가진 Agent를 구현합니다.
 
-### Tool 정의: `app/backend/tools/calculator.py`
+### Tool 정의: `app/backend/agents.py`
+
+Microsoft Agent Framework에서는 Python 함수를 직접 Tool로 등록할 수 있습니다:
 
 ```python
-# 함수 구현
-def add(a: float, b: float) -> float:
+from typing import Annotated
+from pydantic import Field
+
+# 함수 정의 - Annotated + Field로 파라미터 설명 추가
+def add(
+    a: Annotated[float, Field(description="첫 번째 숫자")],
+    b: Annotated[float, Field(description="두 번째 숫자")]
+) -> float:
     """두 숫자를 더합니다."""
     return a + b
 
-def multiply(a: float, b: float) -> float:
+def multiply(
+    a: Annotated[float, Field(description="첫 번째 숫자")],
+    b: Annotated[float, Field(description="두 번째 숫자")]
+) -> float:
     """두 숫자를 곱합니다."""
     return a * b
 
-# Tool 스키마 정의 (OpenAI Function Calling 형식)
-CALCULATOR_TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "add",
-            "description": "두 숫자를 더합니다",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "a": {"type": "number", "description": "첫 번째 숫자"},
-                    "b": {"type": "number", "description": "두 번째 숫자"}
-                },
-                "required": ["a", "b"]
-            }
-        }
-    },
-    # ... subtract, multiply, divide
-]
+# Tool은 함수 리스트로 직접 전달 (JSON schema 불필요!)
+CALCULATOR_TOOLS = [add, subtract, multiply, divide]
 ```
 
 ### ToolAgent 동작 흐름
@@ -358,27 +342,30 @@ CALCULATOR_TOOLS = [
 
 ### 핵심 코드: ToolAgent
 
+Microsoft Agent Framework는 Tool Calling을 자동으로 처리합니다:
+
 ```python
 class ToolAgent(BaseAgent):
     async def initialize(self):
-        self.agent = await self.client.create_agent(
-            model=self.config.model_deployment_name,
+        # AzureAIAgentClient로 Agent 생성
+        self.client = AzureAIAgentClient(
+            project_endpoint=self.config.project_endpoint,
+            model_deployment_name=self.config.model_deployment_name,
+            async_credential=self.credential,
+        )
+        
+        # ChatAgent에 함수 리스트를 tools로 전달
+        self.agent = self.client.create_agent(
             name="계산기 Agent",
             instructions="사칙연산을 수행하는 AI입니다.",
-            tools=CALCULATOR_TOOLS,  # 🔑 Tool 등록
+            tools=CALCULATOR_TOOLS,  # 🔑 함수 리스트 직접 전달
         )
     
     async def chat(self, message: str) -> str:
-        # ... Run 생성 후
-        
-        if run.status == RunStatus.REQUIRES_ACTION:
-            # Tool 호출 처리
-            for tool_call in run.required_action.submit_tool_outputs.tool_calls:
-                result = execute_calculator_function(
-                    tool_call.function.name,
-                    json.loads(tool_call.function.arguments)
-                )
-                # 결과를 Agent에게 반환
+        # Framework가 Tool Calling을 자동으로 처리!
+        async with self.agent as agent:
+            result = await agent.run(message)
+            return result.text  # Tool 실행 결과가 포함된 응답
 ```
 
 ### 실습

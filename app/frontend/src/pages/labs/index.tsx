@@ -1,1 +1,4 @@
-export { default } from "./Labs";
+import Labs from "./Labs";
+
+export const Component = Labs;
+export default Labs;

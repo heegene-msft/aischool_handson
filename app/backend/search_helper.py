@@ -2,15 +2,36 @@
 Azure AI Search RAG Helper
 AI Search를 활용한 검색 및 RAG 기능
 """
+import base64
 import json
 import logging
 from typing import Optional
+from urllib.parse import unquote
 
 from azure.identity.aio import DefaultAzureCredential
 from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import VectorizedQuery
 
 logger = logging.getLogger(__name__)
+
+
+def decode_parent_id(parent_id: str) -> str:
+    """
+    Portal에서 생성된 parent_id (Base64 인코딩된 URL)를 디코딩하여 파일명 추출
+    예: aHR0cHM6Ly8uLi4vWmF2YV9Db21wYW55X092ZXJ2aWV3Lm1kOzc1 
+        -> Zava_Company_Overview.md
+    """
+    try:
+        # Base64 디코딩
+        decoded = base64.b64decode(parent_id).decode('utf-8')
+        # URL에서 파일명만 추출 (예: https://.../data/Zava_Company_Overview.md;75)
+        # 세미콜론 이전까지 자르고 마지막 / 이후 부분 추출
+        path = decoded.split(';')[0] if ';' in decoded else decoded
+        filename = path.split('/')[-1]
+        return unquote(filename)  # URL 인코딩 해제
+    except Exception:
+        # 디코딩 실패시 원본 반환
+        return parent_id
 
 
 class SearchHelper:
@@ -66,23 +87,30 @@ class SearchHelper:
         """
         client = await self._get_client()
         
+        # Portal "Import and vectorize data"로 생성된 인덱스 필드명:
+        # chunk_id, parent_id, chunk, title, text_vector
+        # Semantic configuration: {index_name}-semantic-configuration
         try:
             results = await client.search(
                 search_text=query,
                 top=top,
                 filter=filter_expression,
                 query_type="semantic",
-                semantic_configuration_name="default",
-                select=["id", "content", "title", "sourcefile"],
+                semantic_configuration_name=f"{self.index_name}-semantic-configuration",
+                select=["chunk_id", "chunk", "title", "parent_id"],
             )
             
             documents = []
             async for result in results:
+                # parent_id는 Base64 인코딩된 URL이므로 디코딩하여 파일명 추출
+                parent_id = result.get("parent_id", "")
+                source = decode_parent_id(parent_id) if parent_id else ""
+                
                 documents.append({
-                    "id": result.get("id", ""),
-                    "content": result.get("content", ""),
+                    "id": result.get("chunk_id", ""),
+                    "content": result.get("chunk", ""),
                     "title": result.get("title", ""),
-                    "source": result.get("sourcefile", ""),
+                    "source": source,
                     "score": result.get("@search.score", 0),
                 })
             
@@ -101,11 +129,14 @@ class SearchHelper:
                 
                 documents = []
                 async for result in results:
+                    parent_id = result.get("parent_id", "")
+                    source = decode_parent_id(parent_id) if parent_id else ""
+                    
                     documents.append({
-                        "id": result.get("id", ""),
-                        "content": result.get("content", ""),
+                        "id": result.get("chunk_id", ""),
+                        "content": result.get("chunk", ""),
                         "title": result.get("title", ""),
-                        "source": result.get("sourcefile", ""),
+                        "source": source,
                         "score": result.get("@search.score", 0),
                     })
                 return documents

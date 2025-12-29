@@ -6,7 +6,6 @@ if [ "$USE_CLOUD_INGESTION" = "true" ]; then
   exit 0
 fi
 
-. ./scripts/load_python_env.sh
 
 echo 'Running "prepdocs.py"'
 

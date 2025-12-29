@@ -1,0 +1,285 @@
+.container {
+    display: flex;
+    height: 100vh;
+    background-color: #f5f5f5;
+}
+
+/* 사이드바 */
+.sidebar {
+    width: 280px;
+    background-color: #1a1a2e;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebarTitle {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.labNav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.labButton {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.labButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.labButton.active {
+    background-color: #4361ee;
+    color: white;
+}
+
+.labIcon {
+    font-size: 1.5rem;
+}
+
+.labTitle {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* 메인 영역 */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background-color: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #1a1a2e;
+}
+
+.description {
+    margin: 4px 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.clearButton {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clearButton:hover {
+    background-color: #f5f5f5;
+}
+
+/* 메시지 컨테이너 */
+.messagesContainer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.emptyState h3 {
+    font-size: 1.5rem;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+}
+
+.examples {
+    margin-top: 32px;
+    text-align: left;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.examples p {
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 12px;
+}
+
+.examples ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.examples li {
+    padding: 10px 14px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.examples li:hover {
+    background-color: #e9ecef;
+}
+
+/* 메시지 */
+.messages {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.message {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    max-width: 85%;
+}
+
+.userMessage {
+    background-color: #4361ee;
+    color: white;
+    margin-left: auto;
+}
+
+.assistantMessage {
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.messageIcon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.messageContent {
+    flex: 1;
+}
+
+.messageRole {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+.userMessage .messageRole {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.messageText {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.loading {
+    display: flex;
+    gap: 4px;
+}
+
+.loading span {
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* 입력 폼 */
+.inputForm {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    background-color: white;
+    border-top: 1px solid #e0e0e0;
+}
+
+.input {
+    flex: 1;
+    padding: 14px 18px;
+    border: 1px solid #ddd;
+    border-radius: 24px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.input:focus {
+    border-color: #4361ee;
+}
+
+.submitButton {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 24px;
+    background-color: #4361ee;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+    background-color: #3451de;
+}
+
+.submitButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}

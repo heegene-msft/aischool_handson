@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+# Microsoft Agent Framework 핸즈온 워크샵용 azure.yaml
+# 이 파일을 사용하려면 기존 azure.yaml을 백업 후 이 파일로 교체하세요:
+#   mv azure.yaml azure.yaml.original
+#   cp azure.handson.yaml azure.yaml
+
+name: maf-handson-workshop
+metadata:
+  template: maf-handson-workshop@0.1.0
+
+# 핸즈온용 간소화된 인프라 설정
+infra:
+  provider: bicep
+  path: infra
+  module: main.handson
+
+# 서비스 정의
+services:
+  backend:
+    project: app/backend
+    language: python
+    host: containerapp
+
+# 배포 훅
+hooks:
+  # 사전 패키지 훅 - requirements 설치
+  prepackage:
+    shell: sh
+    run: |
+      echo "Installing Python dependencies..."
+      pip install -r requirements.txt
+    cwd: app/backend
+    interactive: true
+    continueOnError: false
+
+  # 배포 후 훅 - 연결 정보 표시
+  postup:
+    shell: sh
+    run: |
+      echo ""
+      echo "================================================================"
+      echo "🎉 MAF 핸즈온 워크샵 배포가 완료되었습니다!"
+      echo "================================================================"
+      echo ""
+      echo "📝 배포된 리소스 정보:"
+      echo "   • 리소스 그룹: ${AZURE_RESOURCE_GROUP}"
+      echo "   • AI Services: ${AZURE_AI_SERVICES_NAME}"
+      echo "   • AI Search: ${AZURE_SEARCH_SERVICE_NAME}"
+      echo "   • 백엔드 URL: ${SERVICE_BACKEND_URI}"
+      echo ""
+      echo "🔗 Labs 페이지 접속: ${SERVICE_BACKEND_URI}#/labs"
+      echo ""
+      echo "📚 다음 단계:"
+      echo "   1. Azure Portal에서 리소스 확인"
+      echo "   2. Labs 페이지에서 각 Lab 테스트"
+      echo "   3. README.md의 핸즈온 가이드 참고"
+      echo ""
+    interactive: true
+    continueOnError: true

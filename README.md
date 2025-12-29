@@ -54,7 +54,7 @@
     ┌───────────────────────────┐    ┌──────────────────────┐
     │   Microsoft Foundry       │    │  Azure AI Search     │
     │   (Agent Service)         │    │  (RAG용 벡터 인덱스)  │
-    │   - gpt-4o-mini           │    └──────────────────────┘
+    │   - gpt-4.1               │    └──────────────────────┘
     └───────────────────────────┘
 ```
 
@@ -62,12 +62,11 @@
 
 ## 🚀 사전 준비 사항
 
-### 필수 소프트웨어
+### 필수 셋업
 
 - **Python 3.10+** - [다운로드](https://www.python.org/downloads/)
 - **Node.js 18+** - [다운로드](https://nodejs.org/)
 - **Azure CLI** - [설치 가이드](https://learn.microsoft.com/ko-kr/cli/azure/install-azure-cli)
-- **Git** - [다운로드](https://git-scm.com/)
 - **VS Code** (권장) - [다운로드](https://code.visualstudio.com/)
 
 ### Azure 리소스
@@ -91,20 +90,20 @@
    - 좌측 메뉴에서 **"프로젝트"** 선택
    - **"+ 새 프로젝트"** 클릭
    - 프로젝트 이름: `maf-handson-{이니셜}`
-   - 리전: `Korea Central` 또는 `East US 2`
+   - 리전: `Korea Central`
    - **"만들기"** 클릭
 
 3. **Endpoint 확인**:
    - 프로젝트 > **설정** > **프로젝트 속성**
-   - `프로젝트 엔드포인트` 복사 (나중에 사용)
+   - `프로젝트 엔드포인트` 복사 (.env에 반영)
    - 형식: `https://<resource>.services.ai.azure.com/api/projects/<project-id>`
 
-### Step 2: gpt-4o-mini 모델 배포
+### Step 2: gpt-4.1 배포
 
 1. 프로젝트 > **모델 + 엔드포인트** 선택
 2. **"+ 모델 배포"** > **"기본 모델"** 선택
-3. `gpt-4o-mini` 검색 후 선택
-4. 배포 이름: `gpt-4o-mini`
+3. `gpt-4.1` 검색 후 선택
+4. 배포 이름: `gpt-4.1` (냅두시면 어차피 모델명으로 배포 이름이 정해집니다)
 5. **"배포"** 클릭
 
 ### Step 3: Azure AI Search 생성 (Lab 2용)
@@ -113,19 +112,20 @@
 2. **"리소스 만들기"** > `Azure AI Search` 검색
 3. 설정:
    - 서비스 이름: `search-maf-{이니셜}`
-   - 가격 계층: **Basic** (핸즈온용)
+   - 가격 계층: **Basic** (핸즈온용, 데이터 매우 작게 넣으실 거면 Free tier도 가능)
 4. **"검토 + 만들기"** → **"만들기"**
 
 ### Step 4: 로컬 환경 설정
 
+**macOS / Linux (bash/zsh):**
 ```bash
 # 1. 저장소 클론
 git clone <repository-url>
-cd azure-search-openai-demo
+cd aischool-demo
 
-# 2. Python 가상환경 생성 및 활성화
+# 2. Python 가상환경 생성 및 활성화 (conda 쓰시면 conda 쓰셔도 무관)
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 
 # 3. 백엔드 패키지 설치
 pip install -r app/backend/requirements.txt
@@ -136,11 +136,42 @@ npm install
 cd ../..
 ```
 
+**Windows (PowerShell):**
+```powershell
+# 1. 저장소 클론
+git clone <repository-url>
+cd aischool-demo
+
+# 2. Python 가상환경 생성 및 활성화 (conda 쓰시면 conda 쓰셔도 무관)
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# 3. 백엔드 패키지 설치
+pip install -r app/backend/requirements.txt
+
+# 4. 프론트엔드 패키지 설치
+cd app/frontend
+npm install
+cd ..\..
+```
+
+> ⚠️ **Windows PowerShell 실행 정책 오류 시:**
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
 ### Step 5: 환경 변수 설정
 
+**macOS / Linux (bash/zsh):**
 ```bash
 # .env 파일 생성
 cp app/backend/.env.sample app/backend/.env
+```
+
+**Windows (PowerShell):**
+```powershell
+# .env 파일 생성
+Copy-Item app/backend/.env.sample app/backend/.env
 ```
 
 `app/backend/.env` 파일 편집:
@@ -148,7 +179,7 @@ cp app/backend/.env.sample app/backend/.env
 ```env
 # Microsoft Foundry Project (Foundry Portal > 프로젝트 > 설정에서 확인)
 AZURE_AI_PROJECT_ENDPOINT=https://your-resource.services.ai.azure.com/api/projects/your-project-id
-AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4o-mini
+AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4.1
 
 # Azure AI Search (Azure Portal > AI Search > 개요에서 확인)
 AZURE_SEARCH_SERVICE_ENDPOINT=https://your-search.search.windows.net
@@ -211,14 +242,30 @@ class BaseAgent:
 ### 실습
 
 **터미널 1 - 백엔드 실행:**
+
+macOS / Linux:
 ```bash
 cd app/backend
 python -m quart --app app:app run --port 50505 --reload
 ```
 
+Windows PowerShell:
+```powershell
+cd app\backend
+python -m quart --app app:app run --port 50505 --reload
+```
+
 **터미널 2 - CLI 테스트:**
+
+macOS / Linux:
 ```bash
 cd app/backend
+python test_agents.py basic
+```
+
+Windows PowerShell:
+```powershell
+cd app\backend
 python test_agents.py basic
 ```
 
@@ -617,41 +664,6 @@ npm run dev
 
 브라우저에서 **http://localhost:5173/#/labs** 접속
 
-- **기본 챗봇** 탭: Lab 1 테스트
-- **RAG 검색** 탭: Lab 2 테스트  
-- **Tool Calling** 탭: Lab 3 테스트
-- **웹 검색** 탭: Lab 4 테스트 (Bing Search Grounding)
-- **오케스트레이터** 탭: Lab 5 테스트 (멀티에이전트 라우팅)
-
----
-
-## 🚀 Lab 6: Azure Container Apps 배포 (선택)
-
-### 사전 요구사항
-
-```bash
-# Azure Developer CLI 설치
-# macOS
-brew install azure-dev
-
-# Windows
-winget install Microsoft.Azd
-```
-
-### 배포
-
-```bash
-# 핸즈온용 azure.yaml 사용
-cp azure.handson.yaml azure.yaml
-
-# Azure 로그인
-azd auth login
-
-# 환경 초기화 및 배포
-azd up
-```
-
----
 
 ## 📚 참고 자료
 
@@ -662,41 +674,11 @@ azd up
 - [Function Calling](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/function-calling)
 - [Grounding with Bing Search](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/how-to/tools/bing-tools)
 
-### GitHub
+### Framework / Samples
 - [Agent Framework Repository](https://github.com/microsoft/agent-framework)
 - [Azure AI Samples](https://github.com/Azure-Samples)
 
----
-
-## ❓ 문제 해결
-
-### "Unauthorized" 오류
-```bash
-# Azure CLI 재로그인
-az login
-
-# 권한 확인 (Cognitive Services User 역할 필요)
-az role assignment list --assignee <your-email>
-```
-
-### 검색 결과가 없음
-- Azure Portal에서 인덱스 생성 확인
-- 인덱스 이름이 `.env`의 `AZURE_SEARCH_INDEX_NAME`과 일치하는지 확인
-
-### Tool이 호출되지 않음
-- "계산해줘", "더해줘" 등 명시적인 요청 사용
-- Tool 스키마의 `description`이 명확한지 확인
 
 ---
 
-## 🎉 워크샵 완료!
-
-축하합니다! Microsoft Agent Framework로 AI Agent를 구축해보셨습니다.
-
-### 다음 단계
-- 🔗 Multi-Agent 시스템 구축
-- 🌐 외부 API 연동 Tool 추가
-- 📊 Azure Monitor로 모니터링 설정
-- 🔒 Production 배포 및 보안 설정
-
-피드백이나 질문은 Issue로 등록해주세요! 🙏
+## 🎉 고생 많으셨습니다! 

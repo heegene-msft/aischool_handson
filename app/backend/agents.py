@@ -233,7 +233,7 @@ class RAGAgent(BaseAgent):
             sources = [r.get("source", "") for r in search_results if r.get("source")]
             response = result.text
             if sources:
-                response += f"\n\n📚 출처: {', '.join(set(sources))}"
+                response += f"\n\n[출처: {', '.join(set(sources))}]"
             return response
                 
         except Exception as e:
@@ -650,16 +650,16 @@ ROUTE: [카테고리]
             # 2. 적절한 에이전트로 전달
             if agent_type == AgentType.RAG:
                 response = await self.rag_agent.chat(message)
-                prefix = "📚 [RAG Agent]\n"
+                prefix = "[RAG Agent]\n"
             elif agent_type == AgentType.CALCULATOR:
                 response = await self.tool_agent.chat(message)
                 prefix = "🔢 [Calculator Agent]\n"
             elif agent_type == AgentType.WEB_SEARCH:
                 response = await self.web_search_agent.chat(message)
-                prefix = "🌐 [Web Search Agent]\n"
+                prefix = "[Web Search Agent]\n"
             else:
                 response = await self.basic_agent.chat(message)
-                prefix = "🤖 [Basic Agent]\n"
+                prefix = "[Basic Agent]\n"
             
             return f"{prefix}{response}"
                 

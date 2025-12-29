@@ -19,7 +19,7 @@ from agents import BaseAgent, RAGAgent, ToolAgent, CombinedAgent
 async def test_basic_agent():
     """Lab 1: 기본 Agent 테스트"""
     print("\n" + "="*50)
-    print("🤖 Lab 1: 기본 챗봇 테스트")
+    print("Lab 1: 기본 챗봇 테스트")
     print("="*50)
     
     config, _ = load_config()
@@ -27,7 +27,7 @@ async def test_basic_agent():
     
     try:
         response = await agent.chat("안녕하세요! 자기소개를 해주세요.")
-        print(f"\n✅ 응답:\n{response}")
+        print(f"\n[응답]\n{response}")
     finally:
         await agent.close()
 
@@ -35,7 +35,7 @@ async def test_basic_agent():
 async def test_rag_agent():
     """Lab 2: RAG Agent 테스트"""
     print("\n" + "="*50)
-    print("📚 Lab 2: RAG 챗봇 테스트")
+    print("Lab 2: RAG 챗봇 테스트")
     print("="*50)
     
     config, _ = load_config()
@@ -43,7 +43,7 @@ async def test_rag_agent():
     
     try:
         response = await agent.chat("Java 역사에 대해 알려주세요")
-        print(f"\n✅ 응답:\n{response}")
+        print(f"\n[응답]\n{response}")
     finally:
         await agent.close()
 
@@ -51,7 +51,7 @@ async def test_rag_agent():
 async def test_tool_agent():
     """Lab 3: Tool Agent 테스트"""
     print("\n" + "="*50)
-    print("🔧 Lab 3: Tool Calling 테스트")
+    print("Lab 3: Tool Calling 테스트")
     print("="*50)
     
     config, _ = load_config()
@@ -67,9 +67,9 @@ async def test_tool_agent():
         ]
         
         for q in questions:
-            print(f"\n📝 질문: {q}")
+            print(f"\n[질문] {q}")
             response = await agent.chat(q)
-            print(f"✅ 응답: {response}")
+            print(f"[응답] {response}")
     finally:
         await agent.close()
 
@@ -77,7 +77,7 @@ async def test_tool_agent():
 async def test_combined_agent():
     """통합 Agent 테스트"""
     print("\n" + "="*50)
-    print("🚀 통합 Agent 테스트")
+    print("통합 Agent 테스트")
     print("="*50)
     
     config, _ = load_config()
@@ -90,9 +90,9 @@ async def test_combined_agent():
         ]
         
         for q in questions:
-            print(f"\n📝 질문: {q}")
+            print(f"\n[질문] {q}")
             response = await agent.chat(q)
-            print(f"✅ 응답: {response}")
+            print(f"[응답] {response}")
     finally:
         await agent.close()
 
@@ -133,14 +133,14 @@ async def interactive_mode():
     
     try:
         while True:
-            user_input = input("\n👤 You: ").strip()
+            user_input = input("\nYou: ").strip()
             if user_input.lower() in ['quit', 'exit', 'q']:
                 break
             if not user_input:
                 continue
             
             response = await agent.chat(user_input)
-            print(f"\n🤖 Agent: {response}")
+            print(f"\nAgent: {response}")
     finally:
         await agent.close()
 
@@ -148,7 +148,7 @@ async def interactive_mode():
 async def main():
     """메인 함수"""
     print("\n" + "="*60)
-    print("🎯 Microsoft Agent Framework 핸즈온 테스트")
+    print("Microsoft Agent Framework 핸즈온 테스트")
     print("="*60)
     
     if len(sys.argv) > 1:

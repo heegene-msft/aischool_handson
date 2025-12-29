@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import styles from "./Labs.module.css";
 
-type AgentType = "basic" | "rag" | "tools" | "combined";
+type AgentType = "basic" | "rag" | "tools" | "combined" | "websearch" | "orchestrator";
 
 interface Message {
     role: "user" | "assistant";
@@ -36,10 +36,22 @@ const Labs = () => {
             placeholder: "계산을 요청해보세요. 예: 123 + 456은?"
         },
         combined: {
-            title: "통합 Agent",
+            title: "Lab 4: 통합 Agent",
             description: "RAG + Tool Calling 통합 Agent",
-            icon: "🚀",
-            placeholder: "무엇이든 물어보세요..."
+            icon: "🔗",
+            placeholder: "회사 정보나 계산을 요청해보세요..."
+        },
+        websearch: {
+            title: "Lab 5: 웹 검색",
+            description: "Bing Search Grounding을 활용한 인터넷 검색",
+            icon: "🌐",
+            placeholder: "최신 정보나 날씨 등을 물어보세요..."
+        },
+        orchestrator: {
+            title: "Lab 6: 오케스트레이터",
+            description: "질문 유형에 따라 적절한 에이전트로 자동 라우팅",
+            icon: "🎯",
+            placeholder: "무엇이든 물어보세요! (RAG/계산/웹검색/일반 자동 분류)"
         }
     };
 
@@ -185,9 +197,24 @@ const Labs = () => {
                                 )}
                                 {selectedLab === "combined" && (
                                     <ul>
-                                        <li onClick={() => handleExampleClick("Zava 회사의 역사를 알려주세요")}>Zava 회사의 역사를 알려주세요</li>
-                                        <li onClick={() => handleExampleClick("직원 인정 프로그램에 대해 설명해주세요")}>직원 인정 프로그램에 대해 설명해주세요</li>
-                                        <li onClick={() => handleExampleClick("500 곱하기 20은?")}>500 곱하기 20은?</li>
+                                        <li onClick={() => handleExampleClick("Zava 회사의 직원 수는 몇 명인가요?")}>Zava 회사의 직원 수는 몇 명인가요?</li>
+                                        <li onClick={() => handleExampleClick("150 더하기 250은?")}>150 더하기 250은?</li>
+                                        <li onClick={() => handleExampleClick("회사의 핵심 가치를 알려주세요")}>회사의 핵심 가치를 알려주세요</li>
+                                    </ul>
+                                )}
+                                {selectedLab === "websearch" && (
+                                    <ul>
+                                        <li onClick={() => handleExampleClick("오늘 서울 날씨는 어때요?")}>오늘 서울 날씨는 어때요?</li>
+                                        <li onClick={() => handleExampleClick("최근 AI 기술 동향을 알려주세요")}>최근 AI 기술 동향을 알려주세요</li>
+                                        <li onClick={() => handleExampleClick("마이크로소프트의 최신 뉴스는?")}>마이크로소프트의 최신 뉴스는?</li>
+                                    </ul>
+                                )}
+                                {selectedLab === "orchestrator" && (
+                                    <ul>
+                                        <li onClick={() => handleExampleClick("Zava 회사의 휴가 정책은?")}>Zava 회사의 휴가 정책은? (→ RAG)</li>
+                                        <li onClick={() => handleExampleClick("123 곱하기 456은?")}>123 곱하기 456은? (→ Calculator)</li>
+                                        <li onClick={() => handleExampleClick("오늘 뉴욕 날씨 어때?")}>오늘 뉴욕 날씨 어때? (→ Web Search)</li>
+                                        <li onClick={() => handleExampleClick("안녕하세요, 반갑습니다!")}>안녕하세요, 반갑습니다! (→ Basic)</li>
                                     </ul>
                                 )}
                             </div>

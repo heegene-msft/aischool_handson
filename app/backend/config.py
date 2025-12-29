@@ -20,6 +20,9 @@ class AzureConfig:
     search_index_name: str
     search_api_key: Optional[str] = None  # Managed Identity 사용시 불필요
     
+    # Bing Search Grounding (Lab 4)
+    bing_connection_id: Optional[str] = None
+    
     # Optional: Azure OpenAI (별도 사용시)
     openai_endpoint: Optional[str] = None
     openai_api_key: Optional[str] = None
@@ -45,6 +48,7 @@ class AzureConfig:
                 "gptkbindex"
             ),
             search_api_key=os.environ.get("AZURE_SEARCH_API_KEY"),
+            bing_connection_id=os.environ.get("BING_CONNECTION_ID"),
             openai_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
             openai_api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
         )

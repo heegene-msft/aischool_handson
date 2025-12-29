@@ -20,7 +20,10 @@
 | **Lab 1** | 기본 챗봇 구현 | 30분 |
 | **Lab 2** | RAG(Retrieval Augmented Generation) 챗봇 - Azure AI Search 연동 | 40분 |
 | **Lab 3** | Tool Calling - 사칙연산 함수 호출 | 40분 |
-| **Lab 4** | (선택) Azure Container Apps 배포 | 30분 |
+| **Lab 4** | 통합 Agent - RAG + Tool Calling | 20분 |
+| **Lab 5** | 웹 검색 Agent - Bing Search Grounding 연동 | 30분 |
+| **Lab 6** | 오케스트레이터 Agent - 멀티에이전트 라우팅 | 30분 |
+| **Lab 7** | (선택) Azure Container Apps 배포 | 30분 |
 
 ### 아키텍처
 
@@ -39,6 +42,10 @@
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
 │  │  │ BaseAgent    │  │  RAGAgent    │  │  ToolAgent   │     │ │
 │  │  │ (Lab 1)      │  │  (Lab 2)     │  │  (Lab 3)     │     │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
+│  │  │CombinedAgent│  │WebSearchAgent│  │ Orchestrator │     │ │
+│  │  │ (Lab 4)      │  │  (Lab 5)     │  │  (Lab 6)     │     │ │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -70,6 +77,7 @@
 | Microsoft Foundry 프로젝트 | Agent Service 호스팅 | ✅ |
 | gpt-4o-mini 모델 배포 | LLM 추론 | ✅ |
 | Azure AI Search | RAG용 벡터 검색 | Lab 2 |
+| Grounding with Bing Search | 웹 검색 기능 | Lab 4 |
 
 ---
 
@@ -145,6 +153,11 @@ AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4o-mini
 # Azure AI Search (Azure Portal > AI Search > 개요에서 확인)
 AZURE_SEARCH_SERVICE_ENDPOINT=https://your-search.search.windows.net
 AZURE_SEARCH_INDEX_NAME=gptkbindex
+
+# (선택) Bing Search Grounding - Lab 4용
+# 비워두면 SDK가 프로젝트에서 Bing connection을 자동 검색합니다
+# 또는 Connection 이름만 입력해도 됩니다 (예: mybingsearch)
+BING_CONNECTION_ID=
 ```
 
 ### Step 6: Azure 로그인
@@ -395,6 +408,195 @@ python test_agents.py tools
 
 ---
 
+## 🌐 Lab 4: 웹 검색 Agent (30분)
+
+### 목표
+Bing Search Grounding을 사용하여 인터넷에서 실시간 정보를 검색하는 Agent를 구현합니다.
+
+### Step 1: Bing Search 연결 설정
+
+1. **[Azure AI Foundry Portal](https://ai.azure.com)** 접속
+2. 프로젝트 > **"Connected resources"** 섹션
+3. **"+ Add connection"** > **"Grounding with Bing Search"** 선택
+4. Bing 리소스 생성 또는 기존 리소스 선택
+5. Connection Name 기억 (예: `mybingsearch`)
+
+### Step 2: 환경변수 설정 (선택사항)
+
+> 🚀 **자동 검색:** `BING_CONNECTION_ID`를 비워두면 SDK가 프로젝트에서 Bing connection을 **자동으로 찾습니다!**
+
+`.env` 파일 설정 옵션:
+
+```env
+# 옵션 1: 비워두기 (자동 검색)
+BING_CONNECTION_ID=
+
+# 옵션 2: Connection 이름만 입력 (SDK가 ID 조회)
+BING_CONNECTION_ID=mybingsearch
+
+# 옵션 3: 전체 ID 입력
+BING_CONNECTION_ID=/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.CognitiveServices/accounts/xxx/projects/xxx/connections/xxx
+```
+
+### (참고) CLI로 Connection ID 확인
+
+수동으로 확인이 필요한 경우 (Azure CLI 2.80.0+ 필요):
+
+```bash
+# Connection 목록 확인
+az cognitiveservices account project connection list \
+  --name <ai-services-resource-name> \
+  --project-name <project-name> \
+  --resource-group <resource-group>
+
+# 특정 Connection ID 확인
+az cognitiveservices account project connection show \
+  --name <ai-services-resource-name> \
+  --project-name <project-name> \
+  --resource-group <resource-group> \
+  --connection-name <bing-connection-name> \
+  --query id -o tsv
+```
+
+### 핵심 코드: WebSearchAgent
+
+SDK를 사용한 자동 Connection 검색:
+
+```python
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+# 프로젝트에서 Bing connection 자동 검색
+project_client = AIProjectClient(
+    endpoint=config.project_endpoint,
+    credential=DefaultAzureCredential(),
+)
+
+# 이름으로 조회
+connection = project_client.connections.get("mybingsearch")
+bing_connection_id = connection.id
+
+# 또는 전체 목록에서 자동 검색
+for conn in project_client.connections.list():
+    if 'bing' in conn.name.lower():
+        bing_connection_id = conn.id
+        break
+```
+
+Agent 생성:
+
+class WebSearchAgent(BaseAgent):
+    async def initialize(self):
+        # HostedWebSearchTool 생성 - Bing Grounding 사용
+        bing_search_tool = HostedWebSearchTool(
+            name="Bing Grounding Search",
+            description="Search the web for current information using Bing",
+        )
+        
+        # Agent 생성 with Bing Search Tool
+        self.agent = self.client.create_agent(
+            name="웹 검색 Agent",
+            instructions="인터넷 검색을 통해 최신 정보를 제공하는 AI입니다.",
+            tools=[bing_search_tool],  # 🔑 Bing Search Tool 연결
+        )
+```
+
+### 실습
+
+```bash
+python test_agents.py websearch
+```
+
+**예상 출력:**
+```
+🌐 Lab 4: 웹 검색 Agent 테스트
+==================================================
+
+📝 질문: 오늘 서울 날씨는?
+✅ 응답: 오늘 서울의 날씨는 맑고 기온은 약 5도입니다...
+
+📚 출처: weather.com, accuweather.com
+```
+
+---
+
+## 🎯 Lab 5: 오케스트레이터 Agent (30분)
+
+### 목표
+질문 유형을 분석하여 적절한 전문 Agent로 자동 라우팅하는 오케스트레이터를 구현합니다.
+
+### 라우팅 규칙
+
+| 질문 유형 | 라우팅 대상 | 예시 |
+|----------|------------|------|
+| 회사 정보 | RAG Agent | "Zava 휴가 정책은?" |
+| 계산 요청 | Calculator Agent | "123 × 456은?" |
+| 실시간 정보 | Web Search Agent | "오늘 뉴욕 날씨?" |
+| 일반 대화 | Basic Agent | "안녕하세요" |
+
+### 핵심 코드: OrchestratorAgent
+
+```python
+class OrchestratorAgent(BaseAgent):
+    """멀티에이전트 라우팅 오케스트레이터"""
+    
+    async def initialize(self):
+        # 라우팅 판단용 Agent
+        self.router_agent = self.client.create_agent(
+            name="라우터",
+            instructions="""질문을 분석하고 카테고리로 분류하세요:
+            - "rag": 회사 내부 문서 관련
+            - "calculator": 수학 계산
+            - "web_search": 날씨, 뉴스 등 실시간 정보
+            - "basic": 일반 대화
+            
+            형식: ROUTE: [카테고리]"""
+        )
+        
+        # 전문 에이전트들
+        self.basic_agent = BaseAgent(self.config)
+        self.rag_agent = RAGAgent(self.config)
+        self.tool_agent = ToolAgent(self.config)
+        self.web_search_agent = WebSearchAgent(self.config)
+    
+    async def chat(self, message: str) -> str:
+        # 1. 라우팅 결정
+        route = await self._determine_route(message)
+        
+        # 2. 적절한 Agent로 전달
+        if route == AgentType.RAG:
+            return await self.rag_agent.chat(message)
+        elif route == AgentType.CALCULATOR:
+            return await self.tool_agent.chat(message)
+        # ...
+```
+
+### 실습
+
+```bash
+python test_agents.py orchestrator
+```
+
+**예상 출력:**
+```
+🎯 Lab 5: 오케스트레이터 테스트
+==================================================
+
+📝 질문: Zava 휴가 정책은?
+🔀 라우팅: RAG Agent
+📚 응답: Zava의 연차 휴가는 입사 첫해 15일...
+
+📝 질문: 123 × 456은?
+🔀 라우팅: Calculator Agent
+🔢 응답: 123 × 456 = 56,088입니다.
+
+📝 질문: 오늘 날씨 어때?
+🔀 라우팅: Web Search Agent
+🌐 응답: 오늘 서울은 맑고 기온은...
+```
+
+---
+
 ## 🖥️ Frontend에서 테스트
 
 ### 실행
@@ -418,11 +620,12 @@ npm run dev
 - **기본 챗봇** 탭: Lab 1 테스트
 - **RAG 검색** 탭: Lab 2 테스트  
 - **Tool Calling** 탭: Lab 3 테스트
-- **통합 Agent** 탭: RAG + Tool Calling
+- **웹 검색** 탭: Lab 4 테스트 (Bing Search Grounding)
+- **오케스트레이터** 탭: Lab 5 테스트 (멀티에이전트 라우팅)
 
 ---
 
-## 🚀 Lab 4: Azure Container Apps 배포 (선택)
+## 🚀 Lab 6: Azure Container Apps 배포 (선택)
 
 ### 사전 요구사항
 
@@ -457,6 +660,7 @@ azd up
 - [Microsoft Foundry Agent Service](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview)
 - [Azure AI Search](https://learn.microsoft.com/en-us/azure/search/)
 - [Function Calling](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/function-calling)
+- [Grounding with Bing Search](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/how-to/tools/bing-tools)
 
 ### GitHub
 - [Agent Framework Repository](https://github.com/microsoft/agent-framework)

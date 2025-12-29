@@ -11,7 +11,7 @@ from quart import Quart, jsonify, request, send_from_directory
 from quart_cors import cors
 
 from config import load_config, AzureConfig
-from agents import BaseAgent, RAGAgent, ToolAgent, CombinedAgent
+from agents import BaseAgent, RAGAgent, ToolAgent, CombinedAgent, WebSearchAgent, OrchestratorAgent
 
 # 환경변수 로드
 load_dotenv()
@@ -195,6 +195,64 @@ async def combined_chat():
         })
     except Exception as e:
         logger.error(f"Combined chat error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/websearch", methods=["POST"])
+async def websearch_chat():
+    """
+    Lab 4: Web Search 채팅 (Bing Search Grounding)
+    """
+    global agents, config
+    
+    data = await request.get_json()
+    message = data.get("message", "")
+    session_id = data.get("session_id", "default")
+    
+    if not message:
+        return jsonify({"error": "메시지가 비어있습니다."}), 400
+    
+    agent_key = f"websearch_{session_id}"
+    if agent_key not in agents:
+        agents[agent_key] = WebSearchAgent(config)
+    
+    try:
+        response = await agents[agent_key].chat(message)
+        return jsonify({
+            "response": response,
+            "agent_type": "websearch",
+        })
+    except Exception as e:
+        logger.error(f"Web Search chat error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/orchestrator", methods=["POST"])
+async def orchestrator_chat():
+    """
+    Lab 5: 오케스트레이터 채팅 (멀티에이전트 라우팅)
+    """
+    global agents, config
+    
+    data = await request.get_json()
+    message = data.get("message", "")
+    session_id = data.get("session_id", "default")
+    
+    if not message:
+        return jsonify({"error": "메시지가 비어있습니다."}), 400
+    
+    agent_key = f"orchestrator_{session_id}"
+    if agent_key not in agents:
+        agents[agent_key] = OrchestratorAgent(config)
+    
+    try:
+        response = await agents[agent_key].chat(message)
+        return jsonify({
+            "response": response,
+            "agent_type": "orchestrator",
+        })
+    except Exception as e:
+        logger.error(f"Orchestrator chat error: {e}")
         return jsonify({"error": str(e)}), 500
 
 

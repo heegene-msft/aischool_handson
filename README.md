@@ -51,7 +51,7 @@
                     ▼                       ▼
     ┌───────────────────────────┐    ┌──────────────────────┐
     │   Microsoft Foundry       │    │  Azure AI Search     │
-    │   (Agent Service)         │    │  (RAG용 벡터 인덱스)  │
+    │   (Agent Service)         │    │  ( RAG용 벡터 인덱스)   │
     │   - gpt-4.1               │    └──────────────────────┘
     └───────────────────────────┘
 ```
@@ -183,7 +183,7 @@ az --version       # 2.x 이상
 ```bash
 # 1. 저장소 클론
 git clone <repository-url>
-cd aischool-demo
+cd aischool-handson
 
 # 2. Python 가상환경 생성 및 활성화 (conda 쓰시면 conda 쓰셔도 무관)
 python -m venv .venv
@@ -202,7 +202,7 @@ cd ../..
 ```powershell
 # 1. 저장소 클론
 git clone <repository-url>
-cd aischool-demo
+cd aischool-handson
 
 # 2. Python 가상환경 생성 및 활성화 (conda 쓰시면 conda 쓰셔도 무관)
 python -m venv .venv

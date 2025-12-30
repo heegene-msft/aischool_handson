@@ -37,7 +37,7 @@ class AzureConfig:
             ),
             model_deployment_name=os.environ.get(
                 "AZURE_AI_MODEL_DEPLOYMENT_NAME",
-                "gpt-4o-mini"
+                "gpt-4.1"
             ),
             search_endpoint=os.environ.get(
                 "AZURE_SEARCH_SERVICE_ENDPOINT",

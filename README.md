@@ -80,6 +80,53 @@
 
 ## 📖 Lab 0: 환경 설정 (20분)
 
+### (Optional) Step 0: 개발 도구 설치
+
+Python, Node.js 등이 설치되어 있지 않다면 아래 명령어로 먼저 설치하세요.
+
+**macOS (Homebrew 사용):**
+```bash
+# Homebrew 설치 (없는 경우)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Python 3.12 설치
+brew install python@3.12
+
+# Node.js 18+ 설치
+brew install node
+
+# Azure CLI 설치
+brew install azure-cli
+
+# 설치 확인
+python3 --version   # Python 3.12.x
+node --version      # v18.x 이상
+npm --version       # 9.x 이상
+az --version        # 2.x 이상
+```
+
+**Windows (PowerShell - 관리자 권한):**
+```powershell
+# winget 사용 (Windows 10/11 기본 제공)
+
+# Python 3.12 설치
+winget install Python.Python.3.12
+
+# Node.js 18+ 설치
+winget install OpenJS.NodeJS.LTS
+
+# Azure CLI 설치
+winget install Microsoft.AzureCLI
+
+# 터미널 재시작 후 설치 확인
+python --version   # Python 3.12.x
+node --version     # v18.x 이상
+npm --version      # 9.x 이상
+az --version       # 2.x 이상
+```
+
+> 💡 **Tip**: Windows에서 `winget`이 없으면 [Microsoft Store](https://aka.ms/getwinget)에서 "앱 설치 관리자"를 설치하세요.
+
 ### Step 1: Microsoft Foundry 프로젝트 생성
 
 1. **[Microsoft Foundry Portal](https://ai.azure.com)** 접속 및 로그인

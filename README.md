@@ -36,15 +36,15 @@
 │                     Backend (Python/Quart)                      │
 │                    http://localhost:50505                       │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │                  Microsoft Agent Framework                  │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
-│  │  │ BaseAgent    │  │  RAGAgent    │  │  ToolAgent   │     │ │
-│  │  │ (Lab 1)      │  │  (Lab 2)     │  │  (Lab 3)     │     │ │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │ │
-│  │  │CombinedAgent│  │WebSearchAgent│  │ Orchestrator │     │ │
-│  │  │ (Lab 4)      │  │  (Lab 5)     │  │  (Lab 6)     │     │ │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘     │ │
+│  │                  Microsoft Agent Framework                 │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │ │
+│  │  │ BaseAgent    │  │  RAGAgent    │  │  ToolAgent   │      │ │
+│  │  │ (Lab 1)      │  │  (Lab 2)     │  │  (Lab 3)     │      │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘      │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │ │
+│  │  │CombinedAgent │  │WebSearchAgent│  │ Orchestrator │      │ │
+│  │  │ (Lab 4)      │  │  (Lab 5)     │  │  (Lab 6)     │      │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘      │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                     │                       │
@@ -125,9 +125,26 @@ npm --version      # 9.x 이상
 az --version       # 2.x 이상
 ```
 
-> 💡 **Tip**: Windows에서 `winget`이 없으면 [Microsoft Store](https://aka.ms/getwinget)에서 "앱 설치 관리자"를 설치하세요.
+> 💡 Windows에서 `winget`이 없으면 [Microsoft Store](https://aka.ms/getwinget)에서 "앱 설치 관리자"를 설치하세요.
 
-### Step 1: Microsoft Foundry 프로젝트 생성
+### Step 1: Azure AI Foundry 리소스 생성
+
+1. **[Azure Portal](https://portal.azure.com)** 접속 및 로그인
+
+2. **Azure AI Foundry 리소스 생성**:
+   - 상단 검색창에 `Azure AI Foundry` 검색
+   - **"+ 만들기"** 클릭
+   - **기본 사항**:
+     - 구독: 사용할 Azure 구독 선택
+     - 리소스 그룹: 새로 만들기 또는 기존 선택 (예: `rg-maf-handson`)
+     - 리전: `Korea Central`
+     - 이름: `ai-foundry-{이니셜}` (예: `ai-foundry-hg`)
+   - **"검토 + 만들기"** → **"만들기"**
+
+3. **배포 완료 대기** (약 2-3분 소요)
+
+
+### Step 2: Microsoft Foundry 프로젝트 생성
 
 1. **[Microsoft Foundry Portal](https://ai.azure.com)** 접속 및 로그인
 
@@ -135,7 +152,7 @@ az --version       # 2.x 이상
    - 좌측 메뉴에서 **"프로젝트"** 선택
    - **"+ 새 프로젝트"** 클릭
    - 프로젝트 이름: `maf-handson-{이니셜}`
-   - 리전: `Korea Central`
+   - Hub: **Step 1에서 생성한 Azure AI Foundry 리소스 선택**
    - **"만들기"** 클릭
 
 3. **Endpoint 확인**:
@@ -143,7 +160,7 @@ az --version       # 2.x 이상
    - `프로젝트 엔드포인트` 복사 (.env에 반영)
    - 형식: `https://<resource>.services.ai.azure.com/api/projects/<project-id>`
 
-### Step 2: gpt-4.1 배포
+### Step 3: gpt-4.1 배포
 
 1. 프로젝트 > **모델 + 엔드포인트** 선택
 2. **"+ 모델 배포"** > **"기본 모델"** 선택
@@ -151,7 +168,7 @@ az --version       # 2.x 이상
 4. 배포 이름: `gpt-4.1` (냅두시면 어차피 모델명으로 배포 이름이 정해집니다)
 5. **"배포"** 클릭
 
-### Step 3: Azure AI Search 생성 (Lab 2용)
+### Step 4: Azure AI Search 생성 (Lab 2용)
 
 1. **[Azure Portal](https://portal.azure.com)** 접속
 2. **"리소스 만들기"** > `Azure AI Search` 검색
@@ -160,7 +177,7 @@ az --version       # 2.x 이상
    - 가격 계층: **Basic** (핸즈온용, 데이터 매우 작게 넣으실 거면 Free tier도 가능)
 4. **"검토 + 만들기"** → **"만들기"**
 
-### Step 4: 로컬 환경 설정
+### Step 5: 로컬 환경 설정
 
 **macOS / Linux (bash/zsh):**
 ```bash
@@ -205,7 +222,7 @@ cd ..\..
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
 
-### Step 5: 환경 변수 설정
+### Step 6: 환경 변수 설정
 
 **macOS / Linux (bash/zsh):**
 ```bash
@@ -236,7 +253,7 @@ AZURE_SEARCH_INDEX_NAME=gptkbindex
 BING_CONNECTION_ID=
 ```
 
-### Step 6: Azure 로그인
+### Step 7: Azure 로그인
 
 ```bash
 az login

@@ -82,7 +82,7 @@
 
 ### (Optional) Step 0: 개발 도구 설치
 
-Python, Node.js 등이 설치되어 있지 않다면 아래 명령어로 먼저 설치하세요.
+Python, Node.js 등이 설치되어 있지 않다면 아래 명령어로 먼저 설치하셔야 합니다.
 
 **macOS (Homebrew 사용):**
 ```bash
@@ -106,6 +106,8 @@ az --version        # 2.x 이상
 ```
 
 **Windows (PowerShell - 관리자 권한):**
+**winget이 익숙하지 않으신 분들은 그냥 MSI installer로 설치하시면 됩니다. 하단에 적어두었습니다.**
+
 ```powershell
 # winget 사용 (Windows 10/11 기본 제공)
 
@@ -124,15 +126,23 @@ node --version     # v18.x 이상
 npm --version      # 9.x 이상
 az --version       # 2.x 이상
 ```
-
 > 💡 Windows에서 `winget`이 없으면 [Microsoft Store](https://aka.ms/getwinget)에서 "앱 설치 관리자"를 설치하세요.
 
-### Step 1: Azure AI Foundry 리소스 생성
+# node+npm MSI installer 기반 설치(Windows)
+https://nodejs.org 에서 아래와 같이 Windows 옵션을 클릭하고 with NPM 옵션으로 드롭박스를 설정하고
+(CPU 아키텍쳐는 본인이 사용 중인 로컬환경 PC 기준으로) 하단의 msi 다운로드를 눌러 설치합니다.
+![npm](images/npm.png)
+
+# az cli(Azure CLI) MSI installer 기반 설치(windows)
+https://learn.microsoft.com/ko-kr/cli/azure/install-azure-cli-windows?view=azure-cli-latest&pivots=msi 링크를 통해 다운로드합니다.
+
+
+### Step 1: Azure Microsoft Foundry 리소스 생성
 
 1. **[Azure Portal](https://portal.azure.com)** 접속 및 로그인
 
-2. **Azure AI Foundry 리소스 생성**:
-   - 상단 검색창에 `Azure AI Foundry` 검색
+2. **Microsoft Foundry 리소스 생성**:
+   - 상단 검색창에 `Microsoft Foundry` 검색
    - **"+ 만들기"** 클릭
    - **기본 사항**:
      - 구독: 사용할 Azure 구독 선택
@@ -141,7 +151,7 @@ az --version       # 2.x 이상
      - 이름: `ai-foundry-{이니셜}` (예: `ai-foundry-hg`)
    - **"검토 + 만들기"** → **"만들기"**
 
-3. **배포 완료 대기** (약 2-3분 소요)
+3. **배포 완료 대기** (약 1-2분 소요)
 
 
 ### Step 2: Microsoft Foundry 프로젝트 생성
@@ -152,7 +162,7 @@ az --version       # 2.x 이상
    - 좌측 메뉴에서 **"프로젝트"** 선택
    - **"+ 새 프로젝트"** 클릭
    - 프로젝트 이름: `maf-handson-{이니셜}`
-   - Hub: **Step 1에서 생성한 Azure AI Foundry 리소스 선택**
+   - Hub: **Step 1에서 생성한 Microsoft Foundry 리소스 선택**
    - **"만들기"** 클릭
 
 3. **Endpoint 확인**:
@@ -249,7 +259,8 @@ AZURE_SEARCH_INDEX_NAME=gptkbindex
 
 # (선택) Bing Search Grounding - Lab 4용
 # 비워두면 SDK가 프로젝트에서 Bing connection을 자동 검색합니다. 그냥 비워두시는 편이 편합니다. 
-# 또는 Connection 이름만 입력해도 됩니다 (예: mybingsearch)
+# ==> 자동으로 찾는 부분이, 지금 같은 구독에서 여러 개의 Bing Search Connection이 생겨서 자동 매핑이 어려워서,
+직접 입력을 해 주셔야 합니다. 
 BING_CONNECTION_ID=
 ```
 
@@ -357,11 +368,35 @@ Azure AI Search를 연동하여 문서 기반 질의응답(RAG) 시스템을 구
 
 샘플 데이터 `data/Zava_Company_Overview.md`를 Azure AI Search에 인덱싱:
 
+인덱싱을 하기 전 우선 Cloud의 데이터 스토리지인 Storage Account 내의 Blob storage에 저장해야 합니다.
+Storage account를 생성하고, Blob storage에 업로드하기 위해서
+1. Storage account를 생성합니다. (예시 이미지)
+![storageaccount](images/storageaccount.png)
+2. 현재 사용자는 Storage account라는 리소스를 생성했을 뿐 스토리지의 컨텐츠에 접근 권한이 없습니다.
+권한 부여를 위해 Storage account의 IAM으로 이동해서 Storage Blob Data Owner 권한을 현재 유저에게 부여합니다.
+3. Blob storage로 이동해서 container 이름을 만들고, 해당 container의 이름을 기억해 둡니다.
+![blob](/images/blob.png)
 
-Azure Portal에서 수동 설정:
-1. AI Search > **데이터 가져오기**
-2. 데이터 원본: Blob Storage 또는 직접 업로드
-3. 인덱스 이름: `gptkbindex`
+
+추가 스텝으로, Microsoft Foundry를 통해 임베딩 모델을 배포해 줍니다. 
+AI Search에서는 벡터화를 위해 임베딩 모델을 사용해야 하는데, 이 임베딩 모델을 Microsoft Foundry에 배포할 예정입니다. 
+
+text-embedding-ada-002 모델을 해당 Foundry project에 배포를 하고,
+Foundry 리소스의 IAM으로 이동해서 "Azure AI User" 역할을 만든 AI Search의 Identity에 부여합니다.
+(Identity 에서 Search service가 안 보이신다면, AI Search 서비스에서 Managed Identity가 켜져 있는지 확인해 주세요 :) )
+
+
+Azure Portal에서 AI Search Import 시작:
+1. AI Search > **데이터 가져오기(new)** 클릭하여 임포트 시작
+2. 데이터 원본: Blob Storage
+3. 아래와 같이 입력 (prefix 부분의 이름을 꼭 gptkbindex 로 지어 주셔야 합니다)
+그리고 Import할 때 임베딩 모델을 호스팅하는 옵션은 Azure AI Foundry를 선택하셔야 합니다.
+임베딩 모델은 조금 전 배포한 text-embedding-ada-002 입니다. 
+![importer](/images/importer.png)
+![importer2](/images/importer-2.png)
+4. Import가 완성되고 나면, 파란 버튼을 눌러 Index로 이동합니다. 검색 버튼을 눌렀을 때
+아래 이미지처럼 벡터값을 포함한 컬렉션이 나와야 합니다. 
+![index](/images/index.png)
 
 ### 핵심 코드: RAGAgent
 
@@ -412,6 +447,10 @@ Zava는 1985년에 설립된 기술 회사입니다...
 - "Zava의 핵심 가치는?"
 - "Zava Company의 휴가에 대해 알려주세요"
 - "Java 역사에 대해 알려주세요(안나와야합니다 ㅎㅎ)"
+
+추가로 출처가 aHR0cHM6Ly9oZWVnZ ~~~ 이런식으로 나올 건데요,
+이 부분을 자연어로 출처 파일이 나타나도록 해 보세요! 힌트는 encoding 입니다 :)
+
 
 ---
 
@@ -520,7 +559,7 @@ Bing Search Grounding을 사용하여 인터넷에서 실시간 정보를 검색
 
 ### Step 1: Bing Search 연결 설정
 
-1. **[Azure AI Foundry Portal](https://ai.azure.com)** 접속
+1. **[Microsoft Foundry Portal](https://ai.azure.com)** 접속
 2. 프로젝트 > **"Connected resources"** 섹션
 3. **"+ Add connection"** > **"Grounding with Bing Search"** 선택
 4. Bing 리소스 생성 또는 기존 리소스 선택
@@ -533,7 +572,8 @@ Bing Search Grounding을 사용하여 인터넷에서 실시간 정보를 검색
 `.env` 파일 설정 옵션:
 
 ```env
-# 옵션 1: 비워두기 (자동 검색)
+# 옵션 1: 비워두기  ==> 같은 subscription 내에서 다같이 작업하는 경우는 결과가 중복되어 검색이 어렵습니다..이방법은 개인 계정에서!
+
 BING_CONNECTION_ID=
 
 # 옵션 2: Connection 이름만 입력 (SDK가 ID 조회)
@@ -585,20 +625,29 @@ class WebSearchAgent(BaseAgent):
 
 ### 실습
 
+여기서부터는, frontend app까지 실행해서 app 기반으로 확인해 보세요!
+
+## 🖥️ Frontend에서 테스트 (터미널 두 개를 열어서 두개를 모두 실행해 주셔야 합니다^^)
+
+### 실행
+
+**터미널 1:** 
 ```bash
-python test_agents.py websearch
+cd app/backend
+python -m quart --app app:app run --port 50505 --reload
 ```
 
-**예상 출력:**
+**터미널 2:**
+```bash
+cd app/frontend
+npm run dev
 ```
-🌐 Lab 4: 웹 검색 Agent 테스트
-==================================================
 
-📝 질문: 오늘 서울 날씨는?
-✅ 응답: 오늘 서울의 날씨는 맑고 기온은 약 5도입니다...
+### Labs 페이지 접속
 
-📚 출처: weather.com, accuweather.com
-```
+브라우저에서 **http://localhost:5173/#/labs** 접속 
+==> 50505 포트로 백엔드 서버가 뜨고 5173 포트로 프론트엔드 서버가 뜨는거예요! 
+
 
 ---
 
@@ -679,25 +728,7 @@ python test_agents.py orchestrator
 
 ---
 
-## 🖥️ Frontend에서 테스트
 
-### 실행
-
-**터미널 1:**
-```bash
-cd app/backend
-python -m quart --app app:app run --port 50505 --reload
-```
-
-**터미널 2:**
-```bash
-cd app/frontend
-npm run dev
-```
-
-### Labs 페이지 접속
-
-브라우저에서 **http://localhost:5173/#/labs** 접속
 
 
 ## 📚 참고 자료

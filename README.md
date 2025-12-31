@@ -704,9 +704,9 @@ class OrchestratorAgent(BaseAgent):
 
 ### 실습
 
-```bash
-python test_agents.py orchestrator
-```
+UI에서 Lab 6에서 각 에이전트에 해당하는 질문들을 던져 보세요!
+질문의 내용에 따라 적절한 에이전트로 라우팅되어 답변이 나타납니다.
+![orchestrator](/images/orchestrator.png)
 
 **예상 출력:**
 ```
